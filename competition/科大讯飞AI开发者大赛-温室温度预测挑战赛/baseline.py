@@ -113,7 +113,7 @@ for f1 in tqdm(['outdoorTemp_200_bin','outdoorHum_200_bin','outdoorAtmo_200_bin'
         data_df['{}_{}_min'.format(f1,f2)] = data_df.groupby([f1])[f2].transform('min')
 
 
-def single_model(clf, train_x, train_y, test_x, clf_name, class_num=1):
+def single_model(clf, train_x, train_y, test_x, clf_name, class_num=1, test_y=0):
 
     train = np.zeros((train_x.shape[0], class_num))
     test = np.zeros((test_x.shape[0], class_num))
@@ -155,7 +155,7 @@ def single_model(clf, train_x, train_y, test_x, clf_name, class_num=1):
     if clf_name == "xgb":
         train_matrix = clf.DMatrix(trn_x , label=trn_y, missing=np.nan)
         valid_matrix = clf.DMatrix(val_x , label=val_y, missing=np.nan)
-        test_matrix  = clf.DMatrix(test_x, label=val_y, missing=np.nan)
+        test_matrix  = clf.DMatrix(test_x, label=test_y, missing=np.nan)
         params = {'booster': 'gbtree',
                   'eval_metric': 'mae',
                   'min_child_weight': 5,
@@ -217,8 +217,8 @@ def lgb_model(x_train, y_train, x_valid):
     lgb_train, lgb_test = single_model(lgb, x_train, y_train, x_valid, "lgb", 1)
     return lgb_train, lgb_test
 
-def xgb_model(x_train, y_train, x_valid):
-    xgb_train, xgb_test = single_model(xgb, x_train, y_train, x_valid, "xgb", 1)
+def xgb_model(x_train, y_train, x_valid, y_valid):
+    xgb_train, xgb_test = single_model(xgb, x_train, y_train, x_valid, "xgb", 1, y_valid)
     return xgb_train, xgb_test
 
 def cat_model(x_train, y_train, x_valid):
@@ -247,6 +247,7 @@ x_train = train_df[features]
 x_test = test_df[features]
 
 y_train = train_df['temperature'].values - train_df['outdoorTemp'].values
+y_test = test_df['temperature'].values - test_df['outdoorTemp'].values
 
 
 lr_train, lr_test = ridge_model(x_train, y_train, x_test)
@@ -255,7 +256,7 @@ sgd_train, sgd_test = sgd_model(x_train, y_train, x_test)
 
 lgb_train, lgb_test = lgb_model(x_train, y_train, x_test)
 
-xgb_train, xgb_test = xgb_model(x_train, y_train, x_test)
+xgb_train, xgb_test = xgb_model(x_train, y_train, x_test, y_test)
 
 cat_train, cat_test = cat_model(x_train, y_train, x_test)
 
